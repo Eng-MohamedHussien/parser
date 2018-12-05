@@ -17,9 +17,9 @@ outFile = open('output.txt','w')
 '''
 
 #function declaration that we will use it in parser
-def getToken (input):
+def getToken ():
     global index
-
+    global input
     #declaring our states , special symbols and reserved words in the DFA
     states = ['start', 'inComment', 'inDigit', 'inLetter', 'inAssign', 'done']
     specialSymbols = {'+' : 'plus', '-' : 'minus', '*' : 'multiply', '/' : 'division', '=' : 'equal', '<' : 'less than', '(' : 'openning bracket', ')' : 'closing bracket', ';' : 'semi colon'}
@@ -105,5 +105,8 @@ def getToken (input):
             #outFile.write(token + ' , ' + tokenType + '\n')
             #print(token + ' , ' + tokenType + '\n')
             #break
-            return(token + ' , ' + tokenType)
+            return(token + ',' + tokenType)
+        
+    if index >= len(input):
+        return('finish')
 
