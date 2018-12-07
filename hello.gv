@@ -1,5 +1,12 @@
 digraph G {
+	graph [rankdir=TB]
 	node [rankdir=LR shape=box]
 	"read 
 (x)"
+	node [rankdir=LR shape=box]
+	write
+	"read 
+(x)" -> write
+	write
+	write -> t
 }

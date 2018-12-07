@@ -6,8 +6,10 @@
 
 from SCANNER import getToken
 from graphviz import Digraph
+'''
 import os
 os.environ["PATH"] += os.pathsep + 'C:\Program Files (x86)\Graphviz2.38/bin/'
+'''
 g = Digraph('G', filename='hello.gv')
 currentNode = None
 lastNode = None
@@ -68,13 +70,33 @@ def if_stmt():
     match('end','value')
     
 def repeat_stmt():
+    g.attr('node',rankdir='LR',shape='box')
+    if currentNode == None and lastNode == None:
+        currentNode = 'repeat'
+        g.node(currentNode)
+    else:
+        lastNode = currentNode
+        currentNode = 'repeat'
+        g.node(currentNode)
+        g.edge(lastNode,currentNode)
     match('repeat','value')
+    #to be completed
     stmt_sequence()
     match('until','value')
     exp()
     
 def assign_stmt():
+    tempId = token 
     match('identifier','type')
+    g.attr('node',rankdir='LR',shape='box')
+    if currentNode == None and lastNode == None:
+        currentNode = str('assign \n' + '(' + tempId + ')')
+        g.node(currentNode)
+    else:
+        lastNode = currentNode
+        currentNode = str('assign \n' + '(' + tempId +')')
+        g.node(currentNode)
+        g.edge(lastNode,currentNode)
     match(':=','value')
     exp()
     
@@ -108,34 +130,59 @@ def write_stmt():
         lastNode = currentNode
         currentNode = 'write'
         g.node(currentNode)
-        g.edge(lastNode,currentNode)
-    g.attr('node',rankdir='LR',shape='circle')    
+        g.graph_attr['rankdir'] = 'LR'
+        g.edge(lastNode,currentNode)   
     match('write','value')
-    exp()
+    tokenTemp = exp()
+    g.node(currentNode)
+    g.graph_attr.update(rankdir = 'TB')
+    g.edge(currentNode,tokenTemp)
     
 def exp():
     global token
     global tokenType
-    simple_exp()
+    inside = False
+    tokenTempCh1 = simple_exp()
     if token == '<' or token == '=':
-        comparison_op()
-        simple_exp()
+        tokenTempP = comparison_op()
+        g.attr('node',rankdir='TB',shape='circle')
+        lastNode = currentNode
+        currentNode = tokenTempP
+        g.node(currentNode)
+        g.node(tokenTempCh1)
+        g.edge(lastNode,currentNode)
+        g.edge(currentNode,tokenTempCh1)
+        tokenTempCh2 = simple_exp()
+        g.node(tokenTempCh2)
+        g.edge(currentNode,tokenTempCh2)
+        inside = True
+        return tokenTempP
+    if inside == False:
+        return tokenTempCh1
         
 def comparison_op():
     global token
     global tokenType
     if token == '<':
+        tokenTemp = token
         match('<','value')
+        return tokenTemp
     elif token == '=':
+        tokenTemp = token
         match('=','value')
-
+        return tokenTemp
+    
 def simple_exp():
     global token
     global tokenType
-    term()
+    inside = False
+    tokenTemp = term()
     while token == '+' or token == '-':
         addop()
         term()
+        inside = True
+    if inside == False:
+        return tokenTemp
         
 def addop():
     global token
@@ -148,10 +195,14 @@ def addop():
 def term():
     global token
     global tokenType
-    factor()
+    inside = False
+    tokenTemp = factor()
     while token == '*' or token == '/':
         mulop()
         factor()
+        inside = True
+    if inside == False:
+        return tokenTemp
         
 def mulop():
     global token
@@ -164,14 +215,17 @@ def mulop():
 def factor():
     global token
     global tokenType
+    tokenTemp = token
     if token == '(':
         match('(','value')
         exp()
         match(')','value')
     elif tokenType == 'Number':
         match('Number','type')
+        return tokenTemp
     elif tokenType == 'identifier':
         match('identifier','type')
+        return tokenTemp
     
 def match(matched,by):
     '''
