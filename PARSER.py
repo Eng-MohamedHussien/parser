@@ -6,13 +6,14 @@
 
 from SCANNER import getToken
 from graphviz import Digraph
-'''
-import os
-os.environ["PATH"] += os.pathsep + 'C:\Program Files (x86)\Graphviz2.38/bin/'
-'''
+
 g = Digraph('G', filename='hello.gv')
+g.attr('node',rankdir='LR',shape='box')
 currentNode = None
 lastNode = None
+lastNode_val = None
+index = 0
+Temp = None
 
 
 def getNext ():
@@ -24,7 +25,6 @@ def getNext ():
         exit()
     token = fullRecord.split(',')[0]
     tokenType = fullRecord.split(',')[1]
-    #print(token,tokenType)
     
 getNext()
     
@@ -38,10 +38,11 @@ def programe ():
 def stmt_sequence ():
     global token
     global tokenType
-    statement()
+    st1 = statement()
     while token == ';':
         match(';','value')
         statement()
+    return st1
         
 def statement():
     global token
@@ -51,180 +52,279 @@ def statement():
     elif token == 'repeat':
         repeat_stmt()
     elif token == 'read':
-        read_stmt()
+        return read_stmt()
     elif token == 'write':
-        write_stmt()
+        return write_stmt()
     else:
-        assign_stmt()
+        return assign_stmt()
 
 def if_stmt():
     global token
     global tokenType
+    global currentNode
+    global lastNode
+    global lastNode_val
     match('if','value')
-    exp()
+    
+    if currentNode == None and lastNode == None:
+        currentNode = str('if')
+        g.node(currentNode)
+    else:
+        lastNode = currentNode
+        currentNode = str('if')
+        g.node(currentNode)
+        if lastNode_val == 'if' or lastNode_val == 'repeat':
+            g.edge(lastNode,currentNode)
+        else:
+            g.edge(lastNode,currentNode, constraint='false')
+        lastNode_val = 'if'
+            
+    g.edge(currentNode,exp())
     match('then','value')
-    stmt_sequence()
+    g.edge(currentNode,stmt_sequence())
+    
     if token == 'else':
         match('else','value')
-        stmt_sequence()
+        g.edge(currentNode,stmt_sequence())
+        
     match('end','value')
     
 def repeat_stmt():
-    g.attr('node',rankdir='LR',shape='box')
+    global token
+    global tokenType
+    global currentNode
+    global lastNode
+    global index
+    global Temp
+    global lastNode_val
+    
+    g.attr('node',shape='box')
     if currentNode == None and lastNode == None:
-        currentNode = 'repeat'
-        g.node(currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),'repeat')
+        index = index + 1
     else:
         lastNode = currentNode
-        currentNode = 'repeat'
-        g.node(currentNode)
-        g.edge(lastNode,currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),'repeat')
+        index = index + 1
+        if lastNode_val == 'if' or lastNode_val == 'repeat':
+            pass
+        else:
+            g.edge(lastNode,currentNode, constraint='false')
+        lastNode_val = 'repeat'
     match('repeat','value')
-    #to be completed
-    stmt_sequence()
+    g.attr('node',rankdir='LR')
+    g.edge(currentNode,stmt_sequence())
     match('until','value')
-    exp()
+    currentNode = Temp
+    g.edge(currentNode,exp())
     
 def assign_stmt():
+    global token
+    global tokenType
+    global currentNode
+    global lastNode
+    global index
+    global Temp
+    global lastNode_val
+    
     tempId = token 
     match('identifier','type')
-    g.attr('node',rankdir='LR',shape='box')
+    g.attr('node',shape='box')
     if currentNode == None and lastNode == None:
-        currentNode = str('assign \n' + '(' + tempId + ')')
-        g.node(currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),str('assign \n' + '(' + tempId + ')'))
+        index = index + 1
     else:
         lastNode = currentNode
-        currentNode = str('assign \n' + '(' + tempId +')')
-        g.node(currentNode)
-        g.edge(lastNode,currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),str('assign \n' + '(' + tempId +')'))
+        index = index + 1
+        if lastNode_val == 'if' or lastNode_val == 'repeat':
+            Temp = lastNode
+            lastNode_val = None
+        else:
+            g.edge(lastNode,currentNode, constraint='false')
     match(':=','value')
-    exp()
+    g.edge(currentNode,exp())
+    return currentNode
     
 def read_stmt():
     global token
     global tokenType
     global currentNode
     global lastNode
+    global index
+    global Temp
+    global lastNode_val
+    
     match('read','value')
-    g.attr('node',rankdir='LR',shape='box')
     if currentNode == None and lastNode == None:
-        currentNode = str('read \n' + '(' + token + ')')
-        g.node(currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),str('read \n' + '(' + token + ')'))
+        index = index + 1
     else:
         lastNode = currentNode
-        currentNode = str('read \n' + '(' + token +')')
-        g.node(currentNode)
-        g.edge(lastNode,currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),str('read \n' + '(' + token +')'))
+        index = index + 1
+        if lastNode_val == 'if' or lastNode_val == 'repeat':
+            Temp = lastNode
+            lastNode_val = None
+        else:
+            g.edge(lastNode,currentNode, constraint='false')
     match('identifier','type')
-    
+    return currentNode
+
 def write_stmt():
     global token
     global tokenType
     global currentNode
     global lastNode
+    global index
+    global Temp
+    global lastNode_val
+    
     g.attr('node',rankdir='LR',shape='box')
     if currentNode == None and lastNode == None:
-        currentNode = 'write'
-        g.node(currentNode)
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),'write')
+        index = index + 1
     else:
         lastNode = currentNode
-        currentNode = 'write'
-        g.node(currentNode)
-        g.graph_attr['rankdir'] = 'LR'
-        g.edge(lastNode,currentNode)   
+        currentNode = str('n' + str(index))
+        g.node(str('n' + str(index)),'write')
+        index = index + 1
+        if lastNode_val == 'if' or lastNode_val == 'repeat':
+            Temp = lastNode
+            lastNode_val = None
+        else:
+            g.edge(lastNode,currentNode, constraint='false')   
     match('write','value')
-    tokenTemp = exp()
-    g.node(currentNode)
-    g.graph_attr.update(rankdir = 'TB')
-    g.edge(currentNode,tokenTemp)
+    g.attr('node',shape='circle')
+    g.edge(currentNode,exp())
+    return currentNode
     
 def exp():
     global token
     global tokenType
-    inside = False
     tokenTempCh1 = simple_exp()
+    
     if token == '<' or token == '=':
         tokenTempP = comparison_op()
         g.attr('node',rankdir='TB',shape='circle')
-        lastNode = currentNode
-        currentNode = tokenTempP
-        g.node(currentNode)
-        g.node(tokenTempCh1)
-        g.edge(lastNode,currentNode)
-        g.edge(currentNode,tokenTempCh1)
-        tokenTempCh2 = simple_exp()
-        g.node(tokenTempCh2)
-        g.edge(currentNode,tokenTempCh2)
-        inside = True
+        g.edge(tokenTempP,tokenTempCh1)
+        g.edge(tokenTempP,simple_exp())
+        
         return tokenTempP
-    if inside == False:
-        return tokenTempCh1
+    return tokenTempCh1
         
 def comparison_op():
     global token
     global tokenType
+    global index
+    
     if token == '<':
-        tokenTemp = token
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('op \n' + '(' + token + ')'))
+        index = index + 1
         match('<','value')
         return tokenTemp
     elif token == '=':
-        tokenTemp = token
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('op \n' + '(' + token + ')'))
+        index = index + 1
         match('=','value')
         return tokenTemp
     
 def simple_exp():
     global token
     global tokenType
-    inside = False
     tokenTemp = term()
     while token == '+' or token == '-':
-        addop()
-        term()
-        inside = True
-    if inside == False:
-        return tokenTemp
+        tokenTemp1 = addop()
+        g.edge(tokenTemp1,tokenTemp)
+        g.edge(tokenTemp1,term())
+        return tokenTemp1
+    
+    return tokenTemp
         
 def addop():
     global token
     global tokenType
+    global index
+    
     if token == '+':
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('op \n' + '(' + token + ')'))
+        index = index + 1
         match('+','value')
+        return tokenTemp
     elif token == '-':
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('op \n' + '(' + token + ')'))
+        index = index + 1
         match('-','value')
+        return tokenTemp
         
 def term():
     global token
     global tokenType
-    inside = False
     tokenTemp = factor()
+    
     while token == '*' or token == '/':
-        mulop()
-        factor()
-        inside = True
-    if inside == False:
-        return tokenTemp
+        tokenTemp1 = mulop()
+        g.edge(tokenTemp1,tokenTemp)
+        g.edge(tokenTemp1,factor())
+        return tokenTemp1   
+    return tokenTemp
         
 def mulop():
     global token
     global tokenType
+    global index
     if token == '*':
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('op \n' + '(' + token + ')'))
+        index = index + 1
         match('*','value')
+        return tokenTemp
     elif token == '/':
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('op \n' + '(' + token + ')'))
+        index = index + 1
         match('/','value')
+        return tokenTemp
         
 def factor():
     global token
     global tokenType
-    tokenTemp = token
+    global index
     if token == '(':
         match('(','value')
         exp()
         match(')','value')
     elif tokenType == 'Number':
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('const \n' + '(' + token + ')'))
+        index = index + 1
         match('Number','type')
         return tokenTemp
     elif tokenType == 'identifier':
+        tokenTemp = str('n' + str(index))
+        g.attr('node',shape='circle')
+        g.node(str('n' + str(index)),str('id \n' + '(' + token + ')'))
+        index = index + 1
         match('identifier','type')
+        
         return tokenTemp
     
 def match(matched,by):
