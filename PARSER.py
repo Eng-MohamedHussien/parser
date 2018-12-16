@@ -7,7 +7,8 @@
 from SCANNER import getToken
 from graphviz import Digraph
 
-g = Digraph('G', filename='hello.gv')
+g = Digraph('G', filename='hello')
+g.format = 'png'
 g.attr('node',rankdir='LR',shape='box')
 currentNode = None
 lastNode = None
@@ -15,24 +16,29 @@ lastNode_val = None
 index = 0
 Temp = None
 
-
+class Error(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+        
 def getNext ():
     global token
     global tokenType
     fullRecord = getToken()
     if fullRecord == 'finish':
         g.view()
-        exit()
-    token = fullRecord.split(',')[0]
-    tokenType = fullRecord.split(',')[1]
+    else :
+        token = fullRecord.split(',')[0]
+        tokenType = fullRecord.split(',')[1]
     
-getNext()
+
     
 def programe ():
     '''
         we call it only at beginning of programme 
         takes no input and no output 
     '''
+    getNext() 
     stmt_sequence()
     
 def stmt_sequence ():
@@ -334,31 +340,21 @@ def match(matched,by):
     '''
     global token 
     global tokenType
-    
     if by == 'value':
         if token == matched:
-            #print(token+'\n')
             getNext()
-            '''
-            we have to draw here
-            '''
         else:
-            pass
-            # put here we must declare error 
+            raise Error('error : missmatching value of token check it again it excepted to be ' + matched)
+                               
     elif by == 'type':
         if tokenType == matched:
             getNext()
-            '''
-            we have to draw here
-            '''
         else:
-            pass
-            # put here we must declare error 
-
+            raise Error('error : missmatching type of token check it again it excepted to be ' + matched)       
 
 # In[ ]:
+#programe ()
 
-programe()
 
 
 

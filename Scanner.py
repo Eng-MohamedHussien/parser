@@ -2,14 +2,15 @@
 # coding: utf-8
 
 # In[39]:
-
+import os.path
 
 #to know the place of the character you will deal with it next
 index = 0
 
 #reading from file (input.txt)
-fileHandler = open('input.txt','r')
-input = fileHandler.read()
+if os.path.isfile('input.txt'):
+    fileHandler = open('input.txt','r')
+    input = fileHandler.read()
 
 ''''
 #writing to file (output.txt)
@@ -20,6 +21,9 @@ outFile = open('output.txt','w')
 def getToken ():
     global index
     global input
+    if index == 0:
+        fileHandler = open('input.txt','r')
+        input = fileHandler.read()
     #declaring our states , special symbols and reserved words in the DFA
     states = ['start', 'inComment', 'inDigit', 'inLetter', 'inAssign', 'done']
     specialSymbols = {'+' : 'plus', '-' : 'minus', '*' : 'multiply', '/' : 'division', '=' : 'equal', '<' : 'less than', '(' : 'openning bracket', ')' : 'closing bracket', ';' : 'semi colon'}
